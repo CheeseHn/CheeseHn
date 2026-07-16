@@ -4,16 +4,20 @@ import { CalendarGrid } from './components/CalendarGrid';
 import { DayPanel } from './components/DayPanel';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
+import { WeekGrid } from './components/WeekGrid';
 import { useEvents } from './hooks/useEvents';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useNotifications } from './hooks/useNotifications';
-import { getMonthMatrix, todayKey } from './utils/date';
+import type { ViewMode } from './types';
+import { MONTH_NAMES, addDays, formatWeekRangeLabel, getMonthMatrix, getWeekDates, todayKey } from './utils/date';
 import { groupOccurrencesByDate, getOccurrencesInRange } from './utils/occurrences';
 
 function App() {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
+  const [weekAnchor, setWeekAnchor] = useState(todayKey());
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useLocalStorage('calendario.tema.oscuro', false);
 
@@ -24,12 +28,21 @@ function App() {
     document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
   }, [darkMode]);
 
+  const weekDates = useMemo(() => getWeekDates(weekAnchor), [weekAnchor]);
+
   const occurrencesByDate = useMemo(() => {
-    const weeks = getMonthMatrix(year, month);
-    const start = weeks[0][0];
-    const end = weeks[weeks.length - 1][6];
+    let start: string;
+    let end: string;
+    if (viewMode === 'week') {
+      start = weekDates[0];
+      end = weekDates[6];
+    } else {
+      const weeks = getMonthMatrix(year, month);
+      start = weeks[0][0];
+      end = weeks[weeks.length - 1][6];
+    }
     return groupOccurrencesByDate(getOccurrencesInRange(events, start, end));
-  }, [events, year, month]);
+  }, [events, year, month, viewMode, weekDates]);
 
   function goToPrevMonth() {
     if (month === 0) {
@@ -49,28 +62,65 @@ function App() {
     }
   }
 
+  function goToPrev() {
+    if (viewMode === 'week') {
+      setWeekAnchor((d) => addDays(d, -7));
+    } else {
+      goToPrevMonth();
+    }
+  }
+
+  function goToNext() {
+    if (viewMode === 'week') {
+      setWeekAnchor((d) => addDays(d, 7));
+    } else {
+      goToNextMonth();
+    }
+  }
+
   function goToToday() {
     const now = new Date();
     setYear(now.getFullYear());
     setMonth(now.getMonth());
+    setWeekAnchor(todayKey());
+  }
+
+  function changeViewMode(next: ViewMode) {
+    if (next === viewMode) return;
+    if (next === 'week') {
+      // Keep today's date if we're already looking at the current month, otherwise
+      // land on the 1st of whichever month was showing.
+      const now = new Date();
+      const anchor =
+        now.getFullYear() === year && now.getMonth() === month ? todayKey() : `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      setWeekAnchor(anchor);
+    } else {
+      const d = new Date(weekAnchor);
+      setYear(d.getFullYear());
+      setMonth(d.getMonth());
+    }
+    setViewMode(next);
   }
 
   function jumpToDate(dateKey: string) {
     const d = new Date(dateKey);
     setYear(d.getFullYear());
     setMonth(d.getMonth());
+    setWeekAnchor(dateKey);
     setSelectedDate(dateKey);
   }
 
   const selectedOccurrences = selectedDate ? occurrencesByDate.get(selectedDate) ?? [] : [];
+  const periodLabel = viewMode === 'week' ? formatWeekRangeLabel(weekDates) : `${MONTH_NAMES[month]} ${year}`;
 
   return (
     <div className="app">
       <Header
-        year={year}
-        month={month}
-        onPrev={goToPrevMonth}
-        onNext={goToNextMonth}
+        periodLabel={periodLabel}
+        viewMode={viewMode}
+        onChangeViewMode={changeViewMode}
+        onPrev={goToPrev}
+        onNext={goToNext}
         onToday={goToToday}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode((v) => !v)}
@@ -78,12 +128,16 @@ function App() {
       />
 
       <div className="app-body">
-        <CalendarGrid
-          year={year}
-          month={month}
-          occurrencesByDate={occurrencesByDate}
-          onSelectDay={setSelectedDate}
-        />
+        {viewMode === 'month' ? (
+          <CalendarGrid
+            year={year}
+            month={month}
+            occurrencesByDate={occurrencesByDate}
+            onSelectDay={setSelectedDate}
+          />
+        ) : (
+          <WeekGrid weekDates={weekDates} occurrencesByDate={occurrencesByDate} onSelectDay={setSelectedDate} />
+        )}
         <Sidebar
           events={events}
           notificationPermission={permission}

@@ -95,6 +95,36 @@ export function isSameMonth(key: string, year: number, month: number): boolean {
   return d.getFullYear() === year && d.getMonth() === month;
 }
 
+/** Returns the 7 date keys (Monday-first) of the week containing `dateKey`. */
+export function getWeekDates(dateKey: string): string[] {
+  const d = parseDateKey(dateKey);
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - mondayFirstIndex(d.getDay()));
+  const days: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    days.push(toDateKey(monday));
+    monday.setDate(monday.getDate() + 1);
+  }
+  return days;
+}
+
+/** Friendly label for a Monday-first week, e.g. "13–19 de julio de 2026". */
+export function formatWeekRangeLabel(weekDates: string[]): string {
+  const start = parseDateKey(weekDates[0]);
+  const end = parseDateKey(weekDates[6]);
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+
+  if (sameMonth) {
+    return `${start.getDate()}–${end.getDate()} de ${MONTH_NAMES[start.getMonth()]} ${start.getFullYear()}`;
+  }
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const startLabel = `${start.getDate()} ${MONTH_NAMES[start.getMonth()].slice(0, 3)}`;
+  const endLabel = sameYear
+    ? `${end.getDate()} ${MONTH_NAMES[end.getMonth()].slice(0, 3)} ${end.getFullYear()}`
+    : `${end.getDate()} ${MONTH_NAMES[end.getMonth()].slice(0, 3)} ${end.getFullYear()}`;
+  return `${startLabel} – ${endLabel}`;
+}
+
 export function formatFriendlyDate(key: string): string {
   const d = parseDateKey(key);
   const weekday = WEEKDAY_NAMES_LONG[mondayFirstIndex(d.getDay())];

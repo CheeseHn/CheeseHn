@@ -52,6 +52,38 @@
   gap: 8px;
 }
 
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.view-toggle-option {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.view-toggle-option:hover {
+  background: var(--surface-hover);
+}
+
+.view-toggle-active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.view-toggle-active:hover {
+  background: var(--accent);
+}
+
 /* ---------- Buttons ---------- */
 
 .btn {
@@ -217,6 +249,37 @@
   font-size: 11px;
   color: var(--text-muted);
   padding-left: 2px;
+}
+
+/* ---------- Week view ---------- */
+
+.week-grid .week-row {
+  min-height: 65svh;
+}
+
+.week-day {
+  min-height: 0;
+  padding: 10px 8px;
+  gap: 8px;
+}
+
+.week-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.week-day-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.week-day-events {
+  overflow-y: auto;
+  flex: 1;
 }
 
 /* ---------- Event chip ---------- */

@@ -8,6 +8,8 @@ export type EventType =
 
 export type Recurrence = 'none' | 'weekly' | 'monthly' | 'yearly';
 
+export type ViewMode = 'month' | 'week';
+
 export interface CalendarEvent {
   id: string;
   title: string;
